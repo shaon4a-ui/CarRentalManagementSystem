@@ -67,7 +67,7 @@ namespace CarRentalManagementSystem.Customer
             string query = @"
                 SELECT VehicleID, OwnerID, Brand, Model, Year, VehicleType, Seats,
                        PricePerDay, AvailabilityStatus, Description, ImagePath, Location,
-                       TransmissionType, DriveType, CargoVolume
+                       TransmissionType, DriveType, LuggageCapacity, SlidingDoors, GroundClearance
                 FROM Vehicles
                 WHERE AvailabilityStatus = 'Available'
                 ORDER BY VehicleID";

@@ -1,11 +1,18 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System.Configuration;
+using Microsoft.Data.SqlClient;
 
 namespace CarRentalManagementSystem.Database
 {
     public class DatabaseHelper
     {
-        private readonly string connectionString =
-            "Server=(localdb)\\MSSQLLocalDB;Database=CarRentalDB;Trusted_Connection=True;TrustServerCertificate=True;";
+        private readonly string connectionString;
+
+        public DatabaseHelper()
+        {
+            connectionString = ConfigurationManager
+                .ConnectionStrings["CarRentalDB"]
+                .ConnectionString;
+        }
 
         public SqlConnection GetConnection()
         {

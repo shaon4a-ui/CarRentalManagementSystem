@@ -2,7 +2,6 @@ using System;
 using System.Windows.Forms;
 using Microsoft.Data.SqlClient;
 using CarRentalManagementSystem.Database;
-using CarRentalManagementSystem.Models;
 
 namespace CarRentalManagementSystem.Customer
 {
@@ -14,26 +13,28 @@ namespace CarRentalManagementSystem.Customer
         private DateTime startDate;
         private DateTime endDate;
 
-        // ============================================================
-        // DEFAULT CONSTRUCTOR
-        // ============================================================
+        private bool paymentCompleted = false;
+
+        // =========================================================
+        // CONSTRUCTOR
+        // =========================================================
 
         public PaymentForm()
         {
             InitializeComponent();
-        }
 
-        // ============================================================
-        // PAYMENT CONSTRUCTOR
-        // ============================================================
+            // Wire each button exactly once.
+            btnPay.Click += btnPay_Click;
+            btnCancel.Click += btnCancel_Click;
+            btnBack.Click += btnBack_Click;
+        }
 
         public PaymentForm(
             int bookingID,
             decimal amount,
             string carName,
             DateTime startDate,
-            DateTime endDate)
-            : this()
+            DateTime endDate) : this()
         {
             this.bookingID = bookingID;
             this.amount = amount;
@@ -42,65 +43,78 @@ namespace CarRentalManagementSystem.Customer
             this.endDate = endDate;
         }
 
-        // ============================================================
+        // =========================================================
         // FORM LOAD
-        // ============================================================
+        // =========================================================
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
-            cmbPaymentMethod.SelectedIndex = 0;
+            if (cmbPaymentMethod.Items.Count > 0)
+            {
+                cmbPaymentMethod.SelectedIndex = 0;
+            }
 
-            lblBookingID.Text =
-                $"Booking ID: {bookingID}";
-
-            lblCar.Text =
-                $"Car: {carName}";
-
+            lblBookingID.Text = $"Booking ID: {bookingID}";
+            lblCar.Text = $"Car: {carName}";
             lblDates.Text =
                 $"Rental Dates: {startDate:dd/MM/yyyy} - {endDate:dd/MM/yyyy}";
+            lblAmount.Text = $"Total: ৳{amount:N0}";
 
-            lblAmount.Text =
-                $"Total: ৳{amount:N0}";
-
-            btnBack.Click += btnBack_Click;
-            btnCancel.Click += btnCancel_Click;
-            btnPay.Click += btnPay_Click;
+            UpdatePaymentFields();
         }
 
-        // ============================================================
-        // BACK
-        // ============================================================
+        // =========================================================
+        // PAYMENT METHOD CHANGE
+        // =========================================================
 
-        private void btnBack_Click(
+        private void cmbPaymentMethod_SelectedIndexChanged(
             object sender,
             EventArgs e)
         {
-            this.Close();
+            UpdatePaymentFields();
         }
 
-        // ============================================================
-        // CANCEL
-        // ============================================================
-
-        private void btnCancel_Click(
-            object sender,
-            EventArgs e)
+        private void UpdatePaymentFields()
         {
-            this.Close();
+            bool mobile =
+                cmbPaymentMethod.SelectedItem?.ToString() == "Mobile Banking";
+
+            cardFieldsPanel.Visible = !mobile;
+            mobileFieldsPanel.Visible = mobile;
         }
 
-        // ============================================================
-        // PAY NOW
-        // ============================================================
+        // =========================================================
+        // BACK BUTTON
+        // =========================================================
 
-        private void btnPay_Click(
-            object sender,
-            EventArgs e)
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        // =========================================================
+        // CANCEL BUTTON
+        // =========================================================
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        // =========================================================
+        // PAY BUTTON
+        // =========================================================
+
+        private void btnPay_Click(object sender, EventArgs e)
         {
             string paymentMethod =
-                cmbPaymentMethod.SelectedItem?.ToString() ?? "";
+                cmbPaymentMethod.SelectedItem?.ToString();
+
+            // -----------------------------------------------------
+            // PAYMENT METHOD VALIDATION
+            // -----------------------------------------------------
 
             if (string.IsNullOrWhiteSpace(paymentMethod))
             {
@@ -109,8 +123,13 @@ namespace CarRentalManagementSystem.Customer
                     "Payment Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
+
                 return;
             }
+
+            // -----------------------------------------------------
+            // CARD VALIDATION
+            // -----------------------------------------------------
 
             if (paymentMethod == "Credit Card" ||
                 paymentMethod == "Debit Card")
@@ -125,169 +144,183 @@ namespace CarRentalManagementSystem.Customer
                         "Payment Error",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
+
                     return;
                 }
             }
+
+            // -----------------------------------------------------
+            // MOBILE BANKING VALIDATION
+            // -----------------------------------------------------
+
+            else if (paymentMethod == "Mobile Banking")
+            {
+                if (cmbMobileProvider.SelectedIndex < 0 ||
+                    string.IsNullOrWhiteSpace(txtMobileNumber.Text) ||
+                    string.IsNullOrWhiteSpace(txtMobilePin.Text))
+                {
+                    MessageBox.Show(
+                        "Please complete the mobile banking information.",
+                        "Payment Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+
+                    return;
+                }
+            }
+
+            // -----------------------------------------------------
+            // PROCESS PAYMENT
+            // -----------------------------------------------------
 
             try
             {
                 btnPay.Enabled = false;
 
-                using SqlConnection connection =
-                    new DatabaseHelper().GetConnection();
+                DatabaseHelper databaseHelper =
+                    new DatabaseHelper();
 
-                connection.Open();
-
-                using SqlTransaction transaction =
-                    connection.BeginTransaction();
-
-                try
+                using (SqlConnection connection =
+                       databaseHelper.GetConnection())
                 {
-                    // Read the authoritative booking amount/status from the database.
-                    string bookingCheckQuery = @"
-                        SELECT TotalAmount, BookingStatus
-                        FROM Bookings
-                        WHERE BookingID = @BookingID";
+                    connection.Open();
 
-                    decimal databaseAmount;
-                    string bookingStatus;
-
-                    using (SqlCommand command =
-                           new SqlCommand(
-                               bookingCheckQuery,
-                               connection,
-                               transaction))
+                    using (SqlTransaction transaction =
+                           connection.BeginTransaction())
                     {
-                        command.Parameters.AddWithValue("@BookingID", bookingID);
-
-                        using SqlDataReader reader = command.ExecuteReader();
-
-                        if (!reader.Read())
+                        try
                         {
-                            reader.Close();
-                            transaction.Rollback();
+                            // -------------------------------------------------
+                            // CHECK WHETHER THIS BOOKING IS ALREADY PAID
+                            // -------------------------------------------------
+
+                            string checkQuery = @"
+                                SELECT COUNT(*)
+                                FROM Payments
+                                WHERE BookingID = @BookingID
+                                  AND PaymentStatus = 'Paid'";
+
+                            using (SqlCommand checkCommand =
+                                   new SqlCommand(
+                                       checkQuery,
+                                       connection,
+                                       transaction))
+                            {
+                                checkCommand.Parameters.AddWithValue(
+                                    "@BookingID",
+                                    bookingID);
+
+                                int existingPayment =
+                                    Convert.ToInt32(
+                                        checkCommand.ExecuteScalar());
+
+                                if (existingPayment > 0)
+                                {
+                                    transaction.Rollback();
+
+                                    SetPaymentCompleted();
+
+                                    MessageBox.Show(
+                                        "This booking has already been paid.",
+                                        "Already Paid",
+                                        MessageBoxButtons.OK,
+                                        MessageBoxIcon.Information);
+
+                                    return;
+                                }
+                            }
+
+                            // -------------------------------------------------
+                            // INSERT PAYMENT
+                            // -------------------------------------------------
+
+                            string paymentQuery = @"
+                                INSERT INTO Payments
+                                (
+                                    BookingID,
+                                    Amount,
+                                    PaymentMethod,
+                                    PaymentStatus
+                                )
+                                OUTPUT INSERTED.PaymentID
+                                VALUES
+                                (
+                                    @BookingID,
+                                    @Amount,
+                                    @PaymentMethod,
+                                    @PaymentStatus
+                                )";
+
+                            int paymentID;
+
+                            using (SqlCommand paymentCommand =
+                                   new SqlCommand(
+                                       paymentQuery,
+                                       connection,
+                                       transaction))
+                            {
+                                paymentCommand.Parameters.AddWithValue(
+                                    "@BookingID",
+                                    bookingID);
+
+                                paymentCommand.Parameters.AddWithValue(
+                                    "@Amount",
+                                    amount);
+
+                                paymentCommand.Parameters.AddWithValue(
+                                    "@PaymentMethod",
+                                    paymentMethod);
+
+                                paymentCommand.Parameters.AddWithValue(
+                                    "@PaymentStatus",
+                                    "Paid");
+
+                                paymentID =
+                                    Convert.ToInt32(
+                                        paymentCommand.ExecuteScalar());
+                            }
+
+                            // IMPORTANT:
+                            // Payment does NOT confirm the booking.
+                            //
+                            // PaymentStatus = Paid
+                            // BookingStatus = Pending
+                            //
+                            // Owner must confirm the booking.
+
+                            transaction.Commit();
+
+                            SetPaymentCompleted();
+
                             MessageBox.Show(
-                                "The booking could not be found.",
-                                "Payment Error",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Warning);
-                            btnPay.Enabled = true;
-                            return;
-                        }
-
-                        databaseAmount = Convert.ToDecimal(reader["TotalAmount"]);
-                        bookingStatus = reader["BookingStatus"]?.ToString() ?? "";
-                    }
-
-                    if (!bookingStatus.Equals(
-                            "Pending",
-                            StringComparison.OrdinalIgnoreCase))
-                    {
-                        transaction.Rollback();
-                        MessageBox.Show(
-                            "Only pending bookings can be paid.",
-                            "Payment Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning);
-                        btnPay.Enabled = true;
-                        return;
-                    }
-
-                    if (databaseAmount != amount)
-                    {
-                        transaction.Rollback();
-                        MessageBox.Show(
-                            "The booking amount has changed. Please return to My Bookings and try again.",
-                            "Payment Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Warning);
-                        btnPay.Enabled = true;
-                        return;
-                    }
-
-                    string checkQuery = @"
-                        SELECT COUNT(*)
-                        FROM Payments
-                        WHERE BookingID = @BookingID
-                          AND PaymentStatus = 'Paid'";
-
-                    using (SqlCommand checkCommand =
-                           new SqlCommand(checkQuery, connection, transaction))
-                    {
-                        checkCommand.Parameters.AddWithValue("@BookingID", bookingID);
-
-                        if (Convert.ToInt32(checkCommand.ExecuteScalar()) > 0)
-                        {
-                            transaction.Rollback();
-                            MessageBox.Show(
-                                "This booking has already been paid.",
-                                "Already Paid",
+                                $"Payment successful!\n\n" +
+                                $"Payment ID: {paymentID}\n" +
+                                $"Booking ID: {bookingID}\n" +
+                                $"Car: {carName}\n" +
+                                $"Amount: ৳{amount:N0}\n" +
+                                $"Payment Method: {paymentMethod}\n" +
+                                $"Payment Status: Paid\n" +
+                                $"Booking Status: Pending\n\n" +
+                                $"Please wait for the owner to confirm your booking.",
+                                "Payment Successful",
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Information);
-                            SetPaymentCompleted();
-                            return;
+                        }
+                        catch
+                        {
+                            transaction.Rollback();
+                            throw;
                         }
                     }
-
-                    Payment payment = new Payment
-                    {
-                        BookingID = bookingID,
-                        Amount = databaseAmount,
-                        PaymentMethod = paymentMethod,
-                        PaymentStatus = "Paid",
-                        TransactionDate = DateTime.Now
-                    };
-
-                    string paymentQuery = @"
-                        INSERT INTO Payments
-                        (BookingID, Amount, PaymentMethod, PaymentStatus, TransactionDate)
-                        OUTPUT INSERTED.PaymentID
-                        VALUES
-                        (@BookingID, @Amount, @PaymentMethod, @PaymentStatus, @TransactionDate)";
-
-                    int paymentID;
-
-                    using (SqlCommand paymentCommand =
-                           new SqlCommand(paymentQuery, connection, transaction))
-                    {
-                        paymentCommand.Parameters.AddWithValue("@BookingID", payment.BookingID);
-                        paymentCommand.Parameters.AddWithValue("@Amount", payment.Amount);
-                        paymentCommand.Parameters.AddWithValue("@PaymentMethod", payment.PaymentMethod);
-                        paymentCommand.Parameters.AddWithValue("@PaymentStatus", payment.PaymentStatus);
-                        paymentCommand.Parameters.AddWithValue("@TransactionDate", payment.TransactionDate);
-
-                        paymentID = Convert.ToInt32(paymentCommand.ExecuteScalar());
-                    }
-
-                    // Payment does NOT confirm the booking. The owner must confirm it.
-                    transaction.Commit();
-
-                    SetPaymentCompleted();
-
-                    MessageBox.Show(
-                        $"Payment successful!\n\n" +
-                        $"Payment ID: {paymentID}\n" +
-                        $"Booking ID: {bookingID}\n" +
-                        $"Car: {carName}\n" +
-                        $"Amount: ৳{databaseAmount:N0}\n" +
-                        $"Payment Method: {paymentMethod}\n" +
-                        $"Payment Status: Paid\n" +
-                        $"Booking Status: Pending (awaiting owner confirmation)",
-                        "Payment Successful",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-                }
-                catch
-                {
-                    try { transaction.Rollback(); } catch { }
-                    throw;
                 }
             }
             catch (SqlException ex)
             {
                 btnPay.Enabled = true;
+
                 MessageBox.Show(
-                    "Could not process the payment.\n\n" + ex.Message,
+                    "Could not process the payment.\n\n" +
+                    ex.Message,
                     "Database Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
@@ -295,20 +328,24 @@ namespace CarRentalManagementSystem.Customer
             catch (Exception ex)
             {
                 btnPay.Enabled = true;
+
                 MessageBox.Show(
-                    "An unexpected error occurred.\n\n" + ex.Message,
+                    "An unexpected error occurred.\n\n" +
+                    ex.Message,
                     "Payment Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
         }
 
-        // ============================================================
+        // =========================================================
         // PAYMENT COMPLETED UI
-        // ============================================================
+        // =========================================================
 
         private void SetPaymentCompleted()
         {
+            paymentCompleted = true;
+
             btnPay.Text = "✓ Paid";
             btnPay.Enabled = false;
 
@@ -318,6 +355,10 @@ namespace CarRentalManagementSystem.Customer
             txtCardHolder.Enabled = false;
             txtExpiry.Enabled = false;
             txtCVV.Enabled = false;
+
+            cmbMobileProvider.Enabled = false;
+            txtMobileNumber.Enabled = false;
+            txtMobilePin.Enabled = false;
 
             lblSubtitle.Text =
                 "Payment completed successfully";

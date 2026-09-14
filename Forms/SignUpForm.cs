@@ -99,11 +99,9 @@ namespace CarRentalManagementSystem.Forms
 
             try
             {
-                DatabaseHelper databaseHelper =
-                    new DatabaseHelper();
+                DatabaseHelper databaseHelper =  new DatabaseHelper();
 
-                using (SqlConnection connection =
-                    databaseHelper.GetConnection())
+                using (SqlConnection connection =  databaseHelper.GetConnection())
                 {
                     connection.Open();
 

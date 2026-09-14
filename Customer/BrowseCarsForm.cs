@@ -14,11 +14,11 @@ namespace CarRentalManagementSystem.Customer
     {
         private int userID;
 
-        private List<Vehicle> allVehicles =
-            new List<Vehicle>();
+        private List<Vehicle> allVehicles = new List<Vehicle>();
 
-        private List<Vehicle> filteredVehicles =
-            new List<Vehicle>();
+
+        private List<Vehicle> filteredVehicles = new List<Vehicle>();
+
 
         public BrowseCarsForm(int userID)
         {
@@ -40,11 +40,13 @@ namespace CarRentalManagementSystem.Customer
             {
                 allVehicles = GetAvailableVehicles();
 
-                // Show ALL available cars when the form opens.
-                filteredVehicles =
-                    new List<Vehicle>(allVehicles);
+
+                filteredVehicles = new List<Vehicle>(allVehicles);
+
 
                 DisplayCars();
+
+                //displayed 
             }
             catch (Exception ex)
             {
@@ -59,9 +61,12 @@ namespace CarRentalManagementSystem.Customer
 
         private List<Vehicle> GetAvailableVehicles()
         {
-            List<Vehicle> vehicles = new List<Vehicle>();
+            List<Vehicle> vehicles = new List<Vehicle>();   // creating empty list
+
 
             using SqlConnection connection = new DatabaseHelper().GetConnection();
+
+
             connection.Open();
 
             string query = @"
@@ -73,44 +78,94 @@ namespace CarRentalManagementSystem.Customer
                 ORDER BY VehicleID";
 
             using SqlCommand command = new SqlCommand(query, connection);
+
             using SqlDataReader reader = command.ExecuteReader();
+
 
             while (reader.Read())
             {
                 string vehicleType = reader["VehicleType"]?.ToString() ?? "";
+
+
                 Vehicle vehicle = vehicleType.Trim() switch
+
                 {
-                    "Sedan" => new Sedan(),
-                    "SUV" => new SUV(),
-                    "Van" => new Van(),
-                    "Luxury" => new Luxury(),
-                    _ => throw new InvalidOperationException("Unknown vehicle type: " + vehicleType)
+                        "Sedan" => new Sedan(),
+                        "SUV" => new SUV(),
+                        "Van" => new Van(),
+                        "Luxury" => new Luxury(),
+
+                        _ => throw new InvalidOperationException("Unknown vehicle type: " + vehicleType)
+
+
                 };
 
                 vehicle.VehicleID = Convert.ToInt32(reader["VehicleID"]);
+
+
+
                 vehicle.OwnerID = Convert.ToInt32(reader["OwnerID"]);
+                
+
+
                 vehicle.Brand = reader["Brand"]?.ToString() ?? "";
+
+
                 vehicle.Model = reader["Model"]?.ToString() ?? "";
+
+
                 vehicle.Year = Convert.ToInt32(reader["Year"]);
+
+
+
                 vehicle.VehicleType = vehicleType;
+
+
                 vehicle.Seats = Convert.ToInt32(reader["Seats"]);
+
+
+
                 vehicle.PricePerDay = Convert.ToDecimal(reader["PricePerDay"]);
+
+
+
                 vehicle.AvailabilityStatus = reader["AvailabilityStatus"]?.ToString() ?? "";
+
+
                 vehicle.Description = reader["Description"]?.ToString() ?? "";
+
+
                 vehicle.ImagePath = reader["ImagePath"]?.ToString() ?? "";
+
+
                 vehicle.Location = reader["Location"]?.ToString() ?? "";
 
+
                 if (vehicle is Sedan sedan)
+                {
                     sedan.TransmissionType = reader["TransmissionType"]?.ToString() ?? "";
+
+                }
                 else if (vehicle is SUV suv)
+                {
                     suv.DriveType = reader["DriveType"]?.ToString() ?? "";
+
+                }
                 else if (vehicle is Van van)
                 {
                     if (reader["LuggageCapacity"] != DBNull.Value)
+                    {
                         van.LuggageCapacity = Convert.ToDecimal(reader["LuggageCapacity"]);
 
+
+                    }
+
                     if (reader["SlidingDoors"] != DBNull.Value)
+                    {
                         van.SlidingDoors = Convert.ToInt32(reader["SlidingDoors"]);
+
+
+                    }
                 }
 
                 vehicles.Add(vehicle);
@@ -121,319 +176,197 @@ namespace CarRentalManagementSystem.Customer
 
         private void DisplayCars()
         {
-            carsFlowPanel.Controls.Clear();
+            Panel[] cards =
+            {
+                card1,
+                card2,
+                card3,
+                card4,
+                card5,
+                card6
+            };
+
+            PictureBox[] pictures =
+            {
+                picCar1,
+                picCar2,
+                picCar3,
+                picCar4,
+                picCar5,
+                picCar6
+            };
+
+            Label[] names =
+            {
+                lblCarName1,
+                lblCarName2,
+                lblCarName3,
+                lblCarName4,
+                lblCarName5,
+                lblCarName6
+            };
+
+            Label[] information =
+            {
+                lblCarInfo1,
+                lblCarInfo2,
+                lblCarInfo3,
+                lblCarInfo4,
+                lblCarInfo5,
+                lblCarInfo6
+            };
+
+            Label[] locations =
+            {
+                lblCarLocation1,
+                lblCarLocation2,
+                lblCarLocation3,
+                lblCarLocation4,
+                lblCarLocation5,
+                lblCarLocation6
+            };
+
+            Label[] availability =
+            {
+                lblCarAvailability1,
+                lblCarAvailability2,
+                lblCarAvailability3,
+                lblCarAvailability4,
+                lblCarAvailability5,
+                lblCarAvailability6
+            };
+
+            Label[] prices =
+            {
+                lblCarPrice1,
+                lblCarPrice2,
+                lblCarPrice3,
+                lblCarPrice4,
+                lblCarPrice5,
+                lblCarPrice6
+            };
+
+            Button[] detailsButtons =
+            {
+                btnDetails1,
+                btnDetails2,
+                btnDetails3,
+                btnDetails4,
+                btnDetails5,
+                btnDetails6
+            };
+
+            for (int i = 0; i < cards.Length; i++)
+            {
+                cards[i].Visible = false;
+                detailsButtons[i].Tag = null;
+                pictures[i].Image = null;
+            }
 
             if (filteredVehicles.Count == 0)
             {
                 lblResults.Text = "0 cars found";
 
-                Label noCars = new Label();
 
-                noCars.Text =
-                    "No cars match your selected filters.";
-
-                noCars.Font =
-                    new Font("Segoe UI", 12F);
-
-                noCars.ForeColor =
-                    Color.FromArgb(107, 114, 128);
-
-                noCars.AutoSize = true;
-
-                noCars.Margin =
-                    new Padding(20, 30, 20, 20);
-
-                carsFlowPanel.Controls.Add(noCars);
+                lblNoCars.Visible = true;
 
                 return;
             }
 
-            lblResults.Text =
-                $"{filteredVehicles.Count} car(s) available";
+            lblResults.Text = $"{filteredVehicles.Count} car(s) available";
 
-            foreach (Vehicle vehicle in filteredVehicles)
+
+            lblNoCars.Visible = false;
+
+            int displayCount = Math.Min(filteredVehicles.Count, cards.Length);
+
+
+
+
+            for (int i = 0; i < displayCount; i++)
+
+
             {
-                Panel carCard =
-                    CreateCarCard(vehicle);
+                Vehicle vehicle = filteredVehicles[i];
 
-                carsFlowPanel.Controls.Add(carCard);
+
+                names[i].Text = $"{vehicle.Brand} {vehicle.Model}";
+
+
+                information[i].Text =
+                    $"{vehicle.VehicleType}  •  " +
+                    $"{vehicle.Seats} Seats  •  " +
+                    $"{vehicle.Year}";
+
+                locations[i].Text = $"Location: {vehicle.Location}";
+
+
+                availability[i].Text = "● Available";
+
+
+                prices[i].Text = $"৳{vehicle.PricePerDay:N0} / day";
+
+
+                LoadCarImage(pictures[i], vehicle.ImagePath);
+
+
+
+                detailsButtons[i].Tag = vehicle;
+
+
+                cards[i].Visible = true;
             }
 
-            carsFlowPanel.AutoScrollPosition =
-                new Point(0, 0);
-        }
+            carsFlowPanel.AutoScrollPosition = new Point(0, 0);
 
-        private Panel CreateCarCard(Vehicle vehicle)
-        {
-            Panel card = new Panel();
 
-            card.BackColor = Color.White;
+            if (filteredVehicles.Count > cards.Length)
 
-            card.BorderStyle =
-                BorderStyle.FixedSingle;
-
-            card.Width =
-                carsFlowPanel.ClientSize.Width
-                - SystemInformation.VerticalScrollBarWidth
-                - 45;
-
-            if (card.Width < 850)
             {
-                card.Width = 850;
+                lblResults.Text = $"{filteredVehicles.Count} car(s) available  •  " + $"Showing first {cards.Length}";
+
+
             }
-
-            card.Height = 160;
-
-            card.Margin =
-                new Padding(5, 5, 5, 10);
-
-            // IMAGE
-
-            PictureBox picture =
-                new PictureBox();
-
-            picture.Location =
-                new Point(12, 12);
-
-            picture.Size =
-                new Size(190, 134);
-
-            picture.BackColor =
-                Color.FromArgb(245, 247, 250);
-
-            picture.SizeMode =
-                PictureBoxSizeMode.Zoom;
-
-            LoadCarImage(
-                picture,
-                vehicle.ImagePath);
-
-            // CAR NAME
-
-            Label name =
-                new Label();
-
-            name.AutoSize = false;
-
-            name.Location =
-                new Point(225, 17);
-
-            name.Size =
-                new Size(430, 30);
-
-            name.Font =
-                new Font(
-                    "Segoe UI",
-                    14F,
-                    FontStyle.Bold);
-
-            name.ForeColor =
-                Color.FromArgb(31, 41, 55);
-
-            name.Text =
-                $"{vehicle.Brand} {vehicle.Model}";
-
-            // TYPE / SEATS / YEAR
-
-            Label information =
-                new Label();
-
-            information.AutoSize = false;
-
-            information.Location =
-                new Point(225, 53);
-
-            information.Size =
-                new Size(500, 25);
-
-            information.Font =
-                new Font(
-                    "Segoe UI",
-                    9.5F);
-
-            information.ForeColor =
-                Color.FromArgb(107, 114, 128);
-
-            information.Text =
-                $"{vehicle.VehicleType}  •  " +
-                $"{vehicle.Seats} Seats  •  " +
-                $"{vehicle.Year}";
-
-            // LOCATION
-
-            Label location =
-                new Label();
-
-            location.AutoSize = false;
-
-            location.Location =
-                new Point(225, 82);
-
-            location.Size =
-                new Size(400, 25);
-
-            location.Font =
-                new Font(
-                    "Segoe UI",
-                    9.5F);
-
-            location.ForeColor =
-                Color.FromArgb(75, 85, 99);
-
-            location.Text =
-                $"Location: {vehicle.Location}";
-
-            // PRICE
-
-            Label price =
-                new Label();
-
-            price.AutoSize = false;
-
-            price.Location =
-                new Point(225, 130);
-
-            price.Size =
-                new Size(250, 30);
-
-            price.Font =
-                new Font(
-                    "Segoe UI",
-                    12F,
-                    FontStyle.Bold);
-
-            price.ForeColor =
-                Color.FromArgb(37, 99, 235);
-
-            price.Text =
-                $"৳{vehicle.PricePerDay:N0} / day";
-
-
-            
-            // AVAILABILITY
-            // ========================================================
-            Label availability = new Label();
-
-            availability.AutoSize = false;
-
-            availability.Location =
-                new Point(225, 107);
-
-            availability.Size =
-                new Size(200, 25);
-
-            availability.Font =
-                new Font(
-                    "Segoe UI",
-                    9.5F,
-                    FontStyle.Bold);
-
-            availability.ForeColor =
-                Color.FromArgb(22, 163, 74);
-
-            availability.Text =
-                "● Available";
-
-
-            // VIEW DETAILS
-
-            Button details =
-                new Button();
-
-            details.BackColor =
-                Color.FromArgb(37, 99, 235);
-
-            details.FlatAppearance.BorderSize =
-                0;
-
-            details.FlatStyle =
-                FlatStyle.Flat;
-
-            details.Font =
-                new Font(
-                    "Segoe UI",
-                    9.5F,
-                    FontStyle.Bold);
-
-            details.ForeColor =
-                Color.White;
-
-            details.Size =
-                new Size(135, 40);
-
-            details.Location =
-                new Point(
-                    card.Width - 160,
-                    105);
-
-            details.Text =
-                "View Details";
-
-            details.Cursor =
-                Cursors.Hand;
-
-            details.Tag =
-                vehicle;
-
-            details.Click +=
-                ViewDetails_Click;
-
-            // ADD CONTROLS
-
-            card.Controls.Add(picture);
-            card.Controls.Add(name);
-            card.Controls.Add(information);
-            card.Controls.Add(location);
-            card.Controls.Add(availability);
-            card.Controls.Add(price);
-            card.Controls.Add(details);
-
-            return card;
         }
 
-        private void LoadCarImage(
-            PictureBox pictureBox,
-            string imagePath)
+        private void LoadCarImage(PictureBox pictureBox, string imagePath)
+
+
         {
             try
             {
                 pictureBox.Image = null;
 
                 if (string.IsNullOrWhiteSpace(imagePath))
+
                 {
                     return;
                 }
 
-                string cleanPath =
-                    imagePath
-                    .Replace(
-                        "/",
-                        Path.DirectorySeparatorChar.ToString())
-                    .Replace(
-                        "\\",
-                        Path.DirectorySeparatorChar.ToString());
+                string cleanPath = imagePath.Replace("/", Path.DirectorySeparatorChar.ToString()).Replace("\\", Path.DirectorySeparatorChar.ToString());
 
-                string fullPath =
-                    Path.Combine(
-                        Application.StartupPath,
-                        cleanPath);
+
+                string fullPath = Path.Combine(Application.StartupPath, cleanPath);
+
+
+
 
                 if (!File.Exists(fullPath))
                 {
                     return;
                 }
 
-                using (FileStream stream =
-                       new FileStream(
-                           fullPath,
-                           FileMode.Open,
-                           FileAccess.Read))
+                using (FileStream stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read))   //opens the image file for reading
+
+
+
+
                 {
-                    using (Image originalImage =
-                           Image.FromStream(stream))
+                    using (Image originalImage = Image.FromStream(stream))
+
                     {
-                        pictureBox.Image =
-                            new Bitmap(originalImage);
+                        pictureBox.Image = new Bitmap(originalImage);            
+
                     }
                 }
             }
@@ -445,16 +378,16 @@ namespace CarRentalManagementSystem.Customer
 
         // SEARCH
 
-        private void btnSearch_Click(
-            object sender,
-            EventArgs e)
+        private void btnSearch_Click(object sender, EventArgs e)
+
+
         {
             ApplySearchAndFilters();
         }
 
-        private void txtSearch_KeyDown(
-            object sender,
-            KeyEventArgs e)
+        private void txtSearch_KeyDown(object sender, KeyEventArgs e)
+
+
         {
             if (e.KeyCode == Keys.Enter)
             {
@@ -483,7 +416,8 @@ namespace CarRentalManagementSystem.Customer
             string searchText =
                 txtSearch.Text.Trim();
 
-            if (!string.IsNullOrWhiteSpace(searchText))
+            if (!string.IsNullOrWhiteSpace(
+                searchText))
             {
                 results =
                     results.Where(v =>
@@ -535,7 +469,8 @@ namespace CarRentalManagementSystem.Customer
             if (selectedSeats != "All Seats")
             {
                 int seats =
-                    ExtractNumber(selectedSeats);
+                    ExtractNumber(
+                        selectedSeats);
 
                 results =
                     results.Where(v =>
@@ -549,7 +484,8 @@ namespace CarRentalManagementSystem.Customer
                 ?? "Any Price";
 
             decimal? maximumPrice =
-                GetMaximumPrice(selectedPrice);
+                GetMaximumPrice(
+                    selectedPrice);
 
             if (maximumPrice.HasValue)
             {
@@ -565,7 +501,8 @@ namespace CarRentalManagementSystem.Customer
                 cmbLocation.SelectedItem?.ToString()
                 ?? "All Locations";
 
-            if (selectedLocation != "All Locations")
+            if (selectedLocation !=
+                "All Locations")
             {
                 results =
                     results.Where(v =>
@@ -582,7 +519,8 @@ namespace CarRentalManagementSystem.Customer
 
         // SEAT NUMBER
 
-        private int ExtractNumber(string text)
+        private int ExtractNumber(
+            string text)
         {
             string number = "";
 
@@ -640,13 +578,9 @@ namespace CarRentalManagementSystem.Customer
             txtSearch.Clear();
 
             cmbBrand.SelectedIndex = 0;
-
             cmbVehicleType.SelectedIndex = 0;
-
             cmbSeats.SelectedIndex = 0;
-
             cmbMaxPrice.SelectedIndex = 0;
-
             cmbLocation.SelectedIndex = 0;
 
             filteredVehicles =
@@ -694,5 +628,7 @@ namespace CarRentalManagementSystem.Customer
         {
             this.Close();
         }
+
+        
     }
 }

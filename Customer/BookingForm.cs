@@ -12,19 +12,12 @@ namespace CarRentalManagementSystem.Customer
     {
         private Vehicle selectedVehicle;
         private int userID;
-
-        // ============================================================
-        // DEFAULT CONSTRUCTOR
-        // ============================================================
+        private int currentBookingID = 0;
 
         public BookingForm()
         {
             InitializeComponent();
         }
-
-        // ============================================================
-        // BOOKING CONSTRUCTOR
-        // ============================================================
 
         public BookingForm(Vehicle vehicle, int userID)
             : this()
@@ -33,10 +26,6 @@ namespace CarRentalManagementSystem.Customer
             this.userID = userID;
         }
 
-        // ============================================================
-        // FORM LOAD
-        // ============================================================
-
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
@@ -44,9 +33,7 @@ namespace CarRentalManagementSystem.Customer
             dtpStartDate.ValueChanged += DateChanged;
             dtpReturnDate.ValueChanged += DateChanged;
 
-            btnBack.Click += btnBack_Click;
-            btnCancel.Click += btnCancel_Click;
-            btnConfirmBooking.Click += btnConfirmBooking_Click;
+            
 
             dtpStartDate.MinDate = DateTime.Today;
             dtpReturnDate.MinDate = DateTime.Today;
@@ -61,10 +48,6 @@ namespace CarRentalManagementSystem.Customer
 
             CalculateBooking();
         }
-
-        // ============================================================
-        // DISPLAY VEHICLE
-        // ============================================================
 
         private void DisplayVehicle()
         {
@@ -85,10 +68,6 @@ namespace CarRentalManagementSystem.Customer
 
             LoadCarImage(selectedVehicle.ImagePath);
         }
-
-        // ============================================================
-        // LOAD CAR IMAGE
-        // ============================================================
 
         private void LoadCarImage(string imagePath)
         {
@@ -143,20 +122,12 @@ namespace CarRentalManagementSystem.Customer
             }
         }
 
-        // ============================================================
-        // DATE CHANGE
-        // ============================================================
-
         private void DateChanged(
             object sender,
             EventArgs e)
         {
             CalculateBooking();
         }
-
-        // ============================================================
-        // CALCULATE BOOKING
-        // ============================================================
 
         private void CalculateBooking()
         {
@@ -173,7 +144,9 @@ namespace CarRentalManagementSystem.Customer
                 lblDays.Text = "Invalid rental dates";
                 lblTotal.Text = "৳0";
 
-                lblAvailability.Text = "● Invalid rental dates";
+                lblAvailability.Text =
+                    "● Invalid rental dates";
+
                 lblAvailability.ForeColor =
                     Color.FromArgb(220, 38, 38);
 
@@ -196,7 +169,9 @@ namespace CarRentalManagementSystem.Customer
 
             try
             {
-                if (IsVehicleAvailable(startDate, returnDate))
+                if (IsVehicleAvailable(
+                    startDate,
+                    returnDate))
                 {
                     lblAvailability.Text =
                         "● Car Available for these dates";
@@ -229,10 +204,6 @@ namespace CarRentalManagementSystem.Customer
             }
         }
 
-        // ============================================================
-        // BACK BUTTON
-        // ============================================================
-
         private void btnBack_Click(
             object sender,
             EventArgs e)
@@ -240,20 +211,12 @@ namespace CarRentalManagementSystem.Customer
             this.Close();
         }
 
-        // ============================================================
-        // CANCEL BUTTON
-        // ============================================================
-
         private void btnCancel_Click(
             object sender,
             EventArgs e)
         {
             this.Close();
         }
-
-        // ============================================================
-        // CHECK VEHICLE AVAILABILITY
-        // ============================================================
 
         private bool IsVehicleAvailable(
             DateTime startDate,
@@ -273,7 +236,8 @@ namespace CarRentalManagementSystem.Customer
                     WHERE VehicleID = @VehicleID
                       AND BookingStatus IN ('Pending', 'Confirmed')
                       AND StartDate < @EndDate
-                      AND EndDate > @StartDate";
+                      AND EndDate > @StartDate
+                      AND (@ExcludeBookingID = 0 OR BookingID <> @ExcludeBookingID)";
 
                 using (SqlCommand command =
                        new SqlCommand(query, connection))
@@ -290,6 +254,10 @@ namespace CarRentalManagementSystem.Customer
                         "@EndDate",
                         endDate);
 
+                    command.Parameters.AddWithValue(
+                        "@ExcludeBookingID",
+                        currentBookingID);
+
                     int existingBookings =
                         Convert.ToInt32(
                             command.ExecuteScalar());
@@ -299,13 +267,9 @@ namespace CarRentalManagementSystem.Customer
             }
         }
 
-        // ============================================================
-        // CONFIRM BOOKING
-        // ============================================================
-
         private void btnConfirmBooking_Click(
-   object sender,
-   EventArgs e)
+            object sender,
+            EventArgs e)
         {
             if (selectedVehicle == null)
             {
@@ -323,10 +287,6 @@ namespace CarRentalManagementSystem.Customer
 
             DateTime returnDate =
                 dtpReturnDate.Value.Date;
-
-            // ============================================================
-            // VALIDATE DATES
-            // ============================================================
 
             if (returnDate <= startDate)
             {
@@ -358,10 +318,6 @@ namespace CarRentalManagementSystem.Customer
 
             try
             {
-                // ============================================================
-                // CHECK VEHICLE AVAILABILITY
-                // ============================================================
-
                 if (!IsVehicleAvailable(
                     startDate,
                     returnDate))
@@ -376,10 +332,6 @@ namespace CarRentalManagementSystem.Customer
                     return;
                 }
 
-                // ============================================================
-                // INSERT BOOKING
-                // ============================================================
-
                 DatabaseHelper databaseHelper =
                     new DatabaseHelper();
 
@@ -389,57 +341,82 @@ namespace CarRentalManagementSystem.Customer
                     connection.Open();
 
                     string query = @"
-                INSERT INTO Bookings
-                (
-                    CustomerID,
-                    VehicleID,
-                    StartDate,
-                    EndDate,
-                    TotalAmount,
-                    BookingStatus
-                )
-                OUTPUT INSERTED.BookingID
-                VALUES
-                (
-                    @CustomerID,
-                    @VehicleID,
-                    @StartDate,
-                    @EndDate,
-                    @TotalAmount,
-                    @BookingStatus
-                )";
+                        INSERT INTO Bookings
+                        (
+                            CustomerID,
+                            VehicleID,
+                            StartDate,
+                            EndDate,
+                            TotalAmount,
+                            BookingStatus
+                        )
+                        OUTPUT INSERTED.BookingID
+                        VALUES
+                        (
+                            @CustomerID,
+                            @VehicleID,
+                            @StartDate,
+                            @EndDate,
+                            @TotalAmount,
+                            @BookingStatus
+                        )";
 
                     using (SqlCommand command =
                            new SqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@CustomerID", booking.CustomerID);
-                        command.Parameters.AddWithValue("@VehicleID", booking.VehicleID);
-                        command.Parameters.AddWithValue("@StartDate", booking.StartDate);
-                        command.Parameters.AddWithValue("@EndDate", booking.EndDate);
-                        command.Parameters.AddWithValue("@TotalAmount", booking.TotalAmount);
-                        command.Parameters.AddWithValue("@BookingStatus", booking.BookingStatus);
+                        command.Parameters.AddWithValue(
+                            "@CustomerID",
+                            booking.CustomerID);
+
+                        command.Parameters.AddWithValue(
+                            "@VehicleID",
+                            booking.VehicleID);
+
+                        command.Parameters.AddWithValue(
+                            "@StartDate",
+                            booking.StartDate);
+
+                        command.Parameters.AddWithValue(
+                            "@EndDate",
+                            booking.EndDate);
+
+                        command.Parameters.AddWithValue(
+                            "@TotalAmount",
+                            booking.TotalAmount);
+
+                        command.Parameters.AddWithValue(
+                            "@BookingStatus",
+                            booking.BookingStatus);
 
                         int bookingID =
                             Convert.ToInt32(
                                 command.ExecuteScalar());
 
-                        // ====================================================
-                        // OPEN PAYMENT FORM
-                        // ====================================================
+                        currentBookingID = bookingID;
 
-                        PaymentForm paymentForm =
-                            new PaymentForm(
-                                bookingID,
-                                totalAmount,
-                                $"{selectedVehicle.Brand} {selectedVehicle.Model}",
-                                startDate,
-                                returnDate);
+                        using (PaymentForm paymentForm =
+                                 new PaymentForm(
+                                        bookingID,
+                                       totalAmount,
+                                   $"{selectedVehicle.Brand} {selectedVehicle.Model}",
+                                      startDate,
+                                       returnDate))
+                        {
+                            paymentForm.ShowDialog(this);
+                        }
 
-                        this.Hide();
-
-                        paymentForm.ShowDialog();
+                        // Keep the booking when customer leaves
+                        // payment without paying.
+                        //
+                        // The booking remains:
+                        // BookingStatus = Pending
+                        // PaymentStatus = Not Paid
+                        //
+                        // Customer can later pay or cancel
+                        // from My Bookings.
 
                         this.Close();
+
                     }
                 }
             }
@@ -462,7 +439,5 @@ namespace CarRentalManagementSystem.Customer
                     MessageBoxIcon.Error);
             }
         }
-
-        
     }
 }

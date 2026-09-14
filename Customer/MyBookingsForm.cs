@@ -9,6 +9,8 @@ namespace CarRentalManagementSystem.Customer
     public partial class MyBookingsForm : Form
     {
         private readonly int customerID;
+        private DataTable bookingsTable = new DataTable();
+        private int selectedBookingID = 0;
 
         public MyBookingsForm(int customerID)
         {
@@ -17,7 +19,7 @@ namespace CarRentalManagementSystem.Customer
             this.customerID = customerID;
 
             this.Load += MyBookingsForm_Load;
-            this.dgvBookings.SelectionChanged += dgvBookings_SelectionChanged;
+            this.Activated += MyBookingsForm_Activated;
         }
 
         // ============================================================
@@ -27,7 +29,11 @@ namespace CarRentalManagementSystem.Customer
         private void MyBookingsForm_Load(object sender, EventArgs e)
         {
             LoadBookings();
-            UpdateActionButtons();
+        }
+
+        private void MyBookingsForm_Activated(object sender, EventArgs e)
+        {
+            LoadBookings();
         }
 
         // ============================================================
@@ -40,449 +46,406 @@ namespace CarRentalManagementSystem.Customer
             {
                 DatabaseHelper databaseHelper = new DatabaseHelper();
 
-                using (SqlConnection connection =
-                       databaseHelper.GetConnection())
-                {
-                    connection.Open();
+                using SqlConnection connection = databaseHelper.GetConnection();
+                connection.Open();
 
-                    string query = @"
-                        SELECT
-                            b.BookingID AS [Booking ID],
-                            v.Brand + ' ' + v.Model AS [Car],
-                            v.VehicleType AS [Type],
-                            b.StartDate AS [Start Date],
-                            b.EndDate AS [End Date],
-                            b.TotalAmount AS [Total Amount],
-                            b.BookingStatus AS [Booking Status],
-                            ISNULL(p.PaymentStatus, 'Not Paid') AS [Payment Status]
-                        FROM Bookings b
-                        INNER JOIN Vehicles v
-                            ON b.VehicleID = v.VehicleID
-                        OUTER APPLY (
-                            SELECT TOP 1 PaymentStatus
-                            FROM Payments p
-                            WHERE p.BookingID = b.BookingID
-                            ORDER BY p.PaymentID DESC
-                        ) p
-                        WHERE b.CustomerID = @CustomerID
-                        ORDER BY b.BookingID DESC";
+                string query = @"
+                    SELECT
+                        b.BookingID AS [Booking ID],
+                        v.Brand + ' ' + v.Model AS [Car],
+                        v.VehicleType AS [Type],
+                        v.Seats AS [Seats],
+                        v.Location AS [Location],
+                        v.ImagePath AS [ImagePath],
+                        b.StartDate AS [Start Date],
+                        b.EndDate AS [End Date],
+                        b.TotalAmount AS [Total Amount],
+                        b.BookingStatus AS [Booking Status],
+                        ISNULL(p.PaymentStatus, 'Not Paid') AS [Payment Status]
+                    FROM Bookings b
+                    INNER JOIN Vehicles v ON b.VehicleID = v.VehicleID
+                    OUTER APPLY (
+                        SELECT TOP 1 PaymentStatus
+                        FROM Payments p
+                        WHERE p.BookingID = b.BookingID
+                        ORDER BY p.PaymentID DESC
+                    ) p
+                    WHERE b.CustomerID = @CustomerID
+                    ORDER BY b.BookingID DESC";
 
-                    using (SqlCommand command =
-                           new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue(
-                            "@CustomerID",
-                            customerID);
+                using SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@CustomerID", customerID);
 
-                        using (SqlDataAdapter adapter =
-                               new SqlDataAdapter(command))
-                        {
-                            DataTable table = new DataTable();
+                using SqlDataAdapter adapter = new SqlDataAdapter(command);
 
-                            adapter.Fill(table);
+                bookingsTable = new DataTable();
+                adapter.Fill(bookingsTable);
 
-                            dgvBookings.DataSource = table;
-
-                            lblResults.Text =
-                                $"My Bookings  •  {table.Rows.Count} booking(s)";
-                        }
-                    }
-                }
-
-                FormatGrid();
-                UpdateActionButtons();
+                UpdateSummaryCards();
+                ApplySearchAndFilter();
             }
             catch (SqlException ex)
             {
-                MessageBox.Show(
-                    "Could not load your bookings.\n\n" +
-                    ex.Message,
-                    "Database Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                MessageBox.Show("Could not load your bookings.\n\n" + ex.Message,
+                    "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "An unexpected error occurred.\n\n" +
-                    ex.Message,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                MessageBox.Show("An unexpected error occurred.\n\n" + ex.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        // ============================================================
-        // GRID FORMATTING
-        // ============================================================
-
-        private void FormatGrid()
+        private void UpdateSummaryCards()
         {
-            if (dgvBookings.Columns.Count == 0)
-                return;
+            int total = bookingsTable.Rows.Count;
+            int active = 0;
+            int completed = 0;
+            DateTime today = DateTime.Today;
 
-            dgvBookings.AutoSizeColumnsMode =
-                DataGridViewAutoSizeColumnsMode.Fill;
-
-            dgvBookings.SelectionMode =
-                DataGridViewSelectionMode.FullRowSelect;
-
-            dgvBookings.MultiSelect = false;
-
-            dgvBookings.ReadOnly = true;
-
-            dgvBookings.AllowUserToAddRows = false;
-
-            dgvBookings.RowHeadersVisible = false;
-
-            if (dgvBookings.Columns.Contains("Booking ID"))
-                dgvBookings.Columns["Booking ID"].FillWeight = 60;
-
-            if (dgvBookings.Columns.Contains("Car"))
-                dgvBookings.Columns["Car"].FillWeight = 130;
-
-            if (dgvBookings.Columns.Contains("Type"))
-                dgvBookings.Columns["Type"].FillWeight = 80;
-
-            if (dgvBookings.Columns.Contains("Start Date"))
-                dgvBookings.Columns["Start Date"].FillWeight = 90;
-
-            if (dgvBookings.Columns.Contains("End Date"))
-                dgvBookings.Columns["End Date"].FillWeight = 90;
-
-            if (dgvBookings.Columns.Contains("Total Amount"))
-                dgvBookings.Columns["Total Amount"].FillWeight = 90;
-
-            if (dgvBookings.Columns.Contains("Booking Status"))
-                dgvBookings.Columns["Booking Status"].FillWeight = 100;
-
-            if (dgvBookings.Columns.Contains("Payment Status"))
-                dgvBookings.Columns["Payment Status"].FillWeight = 100;
-
-            // Format dates
-            if (dgvBookings.Columns.Contains("Start Date"))
+            foreach (DataRow row in bookingsTable.Rows)
             {
-                dgvBookings.Columns["Start Date"].DefaultCellStyle.Format =
-                    "dd/MM/yyyy";
+                string status = row["Booking Status"]?.ToString() ?? "";
+                DateTime start = Convert.ToDateTime(row["Start Date"]).Date;
+                DateTime end = Convert.ToDateTime(row["End Date"]).Date;
+
+                if (status.Equals("Confirmed", StringComparison.OrdinalIgnoreCase) &&
+                    today >= start && today <= end)
+                    active++;
+
+                if (!status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) &&
+                    end < today)
+                    completed++;
             }
 
-            if (dgvBookings.Columns.Contains("End Date"))
-            {
-                dgvBookings.Columns["End Date"].DefaultCellStyle.Format =
-                    "dd/MM/yyyy";
-            }
-
-            // Format amount
-            if (dgvBookings.Columns.Contains("Total Amount"))
-            {
-                dgvBookings.Columns["Total Amount"]
-                    .DefaultCellStyle.Format = "৳#,##0";
-            }
+            lblTotalBookingsValue.Text = total.ToString();
+            lblActiveRentalsValue.Text = active.ToString();
+            lblCompletedValue.Text = completed.ToString();
         }
 
-        // ============================================================
-        // SELECTION CHANGED
-        // ============================================================
-
-        private void dgvBookings_SelectionChanged(
-            object sender,
-            EventArgs e)
+        private void DisplayBookings(DataTable table)
         {
-            UpdateActionButtons();
+            Panel[] cards = { card1, card2, card3, card4, card5, card6 };
+            PictureBox[] pictures = { picCar1, picCar2, picCar3, picCar4, picCar5, picCar6 };
+            Label[] numbers = { lblBookingNumber1, lblBookingNumber2, lblBookingNumber3, lblBookingNumber4, lblBookingNumber5, lblBookingNumber6 };
+            Label[] names = { lblCarName1, lblCarName2, lblCarName3, lblCarName4, lblCarName5, lblCarName6 };
+            Label[] infos = { lblCarInfo1, lblCarInfo2, lblCarInfo3, lblCarInfo4, lblCarInfo5, lblCarInfo6 };
+            Label[] dates = { lblBookingDates1, lblBookingDates2, lblBookingDates3, lblBookingDates4, lblBookingDates5, lblBookingDates6 };
+            Label[] amounts = { lblBookingAmount1, lblBookingAmount2, lblBookingAmount3, lblBookingAmount4, lblBookingAmount5, lblBookingAmount6 };
+            Label[] payments = { lblPaymentStatus1, lblPaymentStatus2, lblPaymentStatus3, lblPaymentStatus4, lblPaymentStatus5, lblPaymentStatus6 };
+            Label[] statuses = { lblBookingStatus1, lblBookingStatus2, lblBookingStatus3, lblBookingStatus4, lblBookingStatus5, lblBookingStatus6 };
+            Button[] buttons = { btnViewDetails1, btnViewDetails2, btnViewDetails3, btnViewDetails4, btnViewDetails5, btnViewDetails6 };
+
+            for (int i = 0; i < cards.Length; i++)
+            {
+                cards[i].Visible = false;
+                buttons[i].Tag = null;
+                pictures[i].Image = null;
+            }
+
+            lblResults.Text = $"{table.Rows.Count} booking(s) found";
+            lblNoBookings.Visible = table.Rows.Count == 0;
+
+            int count = Math.Min(table.Rows.Count, cards.Length);
+
+            for (int i = 0; i < count; i++)
+            {
+                DataRow row = table.Rows[i];
+
+                int id = Convert.ToInt32(row["Booking ID"]);
+                string status = row["Booking Status"]?.ToString() ?? "";
+                string payment = row["Payment Status"]?.ToString() ?? "";
+
+                numbers[i].Text = $"Booking #{id}";
+                names[i].Text = row["Car"]?.ToString() ?? "";
+                infos[i].Text = $"{row["Type"]}  •  {row["Seats"]} Seats  •  {row["Location"]}";
+                dates[i].Text = $"📅  {Convert.ToDateTime(row["Start Date"]):dd MMM yyyy}  →  {Convert.ToDateTime(row["End Date"]):dd MMM yyyy}";
+                amounts[i].Text = $"💰  ৳{Convert.ToDecimal(row["Total Amount"]):N0}";
+                payments[i].Text = $"Payment: {payment}";
+                statuses[i].Text = status;
+
+                if (status.Equals("Confirmed", StringComparison.OrdinalIgnoreCase))
+                {
+                    statuses[i].BackColor = Color.FromArgb(220, 247, 232);
+                    statuses[i].ForeColor = Color.FromArgb(22, 125, 67);
+                }
+                else if (status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+                {
+                    statuses[i].BackColor = Color.FromArgb(255, 243, 205);
+                    statuses[i].ForeColor = Color.FromArgb(150, 95, 0);
+                }
+                else
+                {
+                    statuses[i].BackColor = Color.FromArgb(248, 225, 228);
+                    statuses[i].ForeColor = Color.FromArgb(190, 45, 62);
+                }
+
+                payments[i].ForeColor = payment.Equals("Paid", StringComparison.OrdinalIgnoreCase)
+                    ? Color.FromArgb(22, 125, 67)
+                    : Color.FromArgb(190, 95, 20);
+
+                LoadBookingImage(pictures[i], row["ImagePath"]?.ToString() ?? "");
+                buttons[i].Tag = id;
+                cards[i].Visible = true;
+            }
+
+            if (table.Rows.Count > cards.Length)
+                lblResults.Text = $"{table.Rows.Count} booking(s) found  •  Showing first {cards.Length}";
         }
 
-        // ============================================================
-        // UPDATE ACTION BUTTONS
-        // ============================================================
-
-        private void UpdateActionButtons()
+        private void LoadBookingImage(PictureBox pictureBox, string imagePath)
         {
-            btnCancelBooking.Enabled = false;
-            btnPayNow.Enabled = false;
-
-            if (dgvBookings.CurrentRow == null)
-                return;
-
             try
             {
-                string bookingStatus =
-                    dgvBookings.CurrentRow.Cells["Booking Status"]
-                    .Value?.ToString() ?? "";
+                pictureBox.Image = null;
+                if (string.IsNullOrWhiteSpace(imagePath))
+                    return;
 
-                string paymentStatus =
-                    dgvBookings.CurrentRow.Cells["Payment Status"]
-                    .Value?.ToString() ?? "";
+                string cleanPath = imagePath.Replace("/", System.IO.Path.DirectorySeparatorChar.ToString())
+                    .Replace("\\", System.IO.Path.DirectorySeparatorChar.ToString());
+                string fullPath = System.IO.Path.Combine(Application.StartupPath, cleanPath);
 
-                // Cancellation is allowed only before payment.
-                if (bookingStatus.Equals(
-                        "Pending",
-                        StringComparison.OrdinalIgnoreCase) &&
-                    paymentStatus.Equals(
-                        "Not Paid",
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    btnCancelBooking.Enabled = true;
-                }
+                if (!System.IO.File.Exists(fullPath))
+                    return;
 
-                // Pay Now is available only when:
-                // Booking = Pending
-                // Payment = Not Paid
-                if (bookingStatus.Equals(
-                        "Pending",
-                        StringComparison.OrdinalIgnoreCase) &&
-                    paymentStatus.Equals(
-                        "Not Paid",
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    btnPayNow.Enabled = true;
-                }
+                using System.IO.FileStream stream = new System.IO.FileStream(
+                    fullPath, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+                using Image original = Image.FromStream(stream);
+                pictureBox.Image = new Bitmap(original);
             }
             catch
             {
-                btnCancelBooking.Enabled = false;
-                btnPayNow.Enabled = false;
+                pictureBox.Image = null;
             }
         }
 
-        // ============================================================
-        // PAY NOW
-        // ============================================================
-
-        private void btnPayNow_Click(
-            object sender,
-            EventArgs e)
+        private void ApplySearchAndFilter()
         {
-            if (dgvBookings.CurrentRow == null)
-            {
-                MessageBox.Show(
-                    "Please select a booking first.",
-                    "Pay Now",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+            if (bookingsTable == null)
+                return;
 
+            string search = txtSearch.Text.Trim();
+            string selected = cmbStatusFilter.SelectedItem?.ToString() ?? "All Statuses";
+            DataTable filtered = bookingsTable.Clone();
+
+            foreach (DataRow row in bookingsTable.Rows)
+            {
+                string id = row["Booking ID"]?.ToString() ?? "";
+                string car = row["Car"]?.ToString() ?? "";
+                string status = row["Booking Status"]?.ToString() ?? "";
+
+                bool matchSearch = string.IsNullOrWhiteSpace(search) ||
+                    id.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    car.Contains(search, StringComparison.OrdinalIgnoreCase);
+
+                bool matchStatus = selected == "All Statuses" ||
+                    status.Equals(selected, StringComparison.OrdinalIgnoreCase);
+
+                if (matchSearch && matchStatus)
+                    filtered.ImportRow(row);
+            }
+
+            DisplayBookings(filtered);
+        }
+
+        private void txtSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                ApplySearchAndFilter();
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void btnSearch_Click(object sender, EventArgs e)
+        {
+            ApplySearchAndFilter();
+        }
+
+        private void cmbStatusFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ApplySearchAndFilter();
+        }
+
+        private void btnRefresh_Click(object sender, EventArgs e)
+        {
+            txtSearch.Clear();
+            cmbStatusFilter.SelectedIndex = 0;
+            LoadBookings();
+        }
+
+        private DataRow FindBooking(int bookingID)
+        {
+            foreach (DataRow row in bookingsTable.Rows)
+                if (Convert.ToInt32(row["Booking ID"]) == bookingID)
+                    return row;
+            return null;
+        }
+
+        private void SelectBooking(int bookingID)
+        {
+            DataRow row = FindBooking(bookingID);
+            if (row == null)
+                return;
+
+            selectedBookingID = bookingID;
+
+            string status = row["Booking Status"]?.ToString() ?? "";
+            string payment = row["Payment Status"]?.ToString() ?? "";
+
+            bool allowed = status.Equals("Pending", StringComparison.OrdinalIgnoreCase) &&
+                           payment.Equals("Not Paid", StringComparison.OrdinalIgnoreCase);
+
+            btnCancelBooking.Enabled = allowed;
+            btnPayNow.Enabled = allowed;
+
+        }
+            private void SelectBookingFromCard(object sender, EventArgs e)
+        {
+            if (sender is Control control && control.Tag != null)
+            {
+                int bookingID = Convert.ToInt32(control.Tag);
+                SelectBooking(bookingID);
+            }
+
+        }
+
+        private void ViewBookingDetails(int bookingID)
+        {
+            DataRow row = FindBooking(bookingID);
+            if (row == null)
+                return;
+
+            SelectBooking(bookingID);
+
+            MessageBox.Show(
+                $"Booking #{bookingID}\n\n" +
+                $"Car: {row["Car"]}\n" +
+                $"Type: {row["Type"]}\n" +
+                $"Seats: {row["Seats"]}\n" +
+                $"Location: {row["Location"]}\n\n" +
+                $"Rental Period: {Convert.ToDateTime(row["Start Date"]):dd MMM yyyy} - {Convert.ToDateTime(row["End Date"]):dd MMM yyyy}\n" +
+                $"Total Amount: ৳{Convert.ToDecimal(row["Total Amount"]):N0}\n\n" +
+                $"Booking Status: {row["Booking Status"]}\n" +
+                $"Payment Status: {row["Payment Status"]}",
+                "Booking Details",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        private void btnViewDetails1_Click(object sender, EventArgs e) { ViewBookingDetails(Convert.ToInt32(btnViewDetails1.Tag)); }
+        private void btnViewDetails2_Click(object sender, EventArgs e) { ViewBookingDetails(Convert.ToInt32(btnViewDetails2.Tag)); }
+        private void btnViewDetails3_Click(object sender, EventArgs e) { ViewBookingDetails(Convert.ToInt32(btnViewDetails3.Tag)); }
+        private void btnViewDetails4_Click(object sender, EventArgs e) { ViewBookingDetails(Convert.ToInt32(btnViewDetails4.Tag)); }
+        private void btnViewDetails5_Click(object sender, EventArgs e) { ViewBookingDetails(Convert.ToInt32(btnViewDetails5.Tag)); }
+        private void btnViewDetails6_Click(object sender, EventArgs e) { ViewBookingDetails(Convert.ToInt32(btnViewDetails6.Tag)); }
+
+        private void btnPayNow_Click(object sender, EventArgs e)
+        {
+            if (selectedBookingID == 0)
+            {
+                MessageBox.Show("Please click View Details on a booking first.", "Pay Now",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
+            DataRow row = FindBooking(selectedBookingID);
+            if (row == null) return;
+
             try
             {
-                DataGridViewRow row =
-                    dgvBookings.CurrentRow;
-
-                int bookingID =
-                    Convert.ToInt32(
-                        row.Cells["Booking ID"].Value);
-
-                string carName =
-                    row.Cells["Car"].Value?.ToString() ?? "";
-
-                DateTime startDate =
-                    Convert.ToDateTime(
-                        row.Cells["Start Date"].Value);
-
-                DateTime endDate =
-                    Convert.ToDateTime(
-                        row.Cells["End Date"].Value);
-
-                decimal amount =
-                    Convert.ToDecimal(
-                        row.Cells["Total Amount"].Value);
-
-                string bookingStatus =
-                    row.Cells["Booking Status"]
-                       .Value?.ToString() ?? "";
-
-                string paymentStatus =
-                    row.Cells["Payment Status"]
-                       .Value?.ToString() ?? "";
-
-                // Safety check
-                if (!bookingStatus.Equals(
-                        "Pending",
-                        StringComparison.OrdinalIgnoreCase))
+                if (!row["Booking Status"].ToString().Equals("Pending", StringComparison.OrdinalIgnoreCase) ||
+                    !row["Payment Status"].ToString().Equals("Not Paid", StringComparison.OrdinalIgnoreCase))
                 {
-                    MessageBox.Show(
-                        "Only pending bookings can be paid.",
-                        "Payment",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-
-                    return;
-                }
-
-                if (!paymentStatus.Equals(
-                        "Not Paid",
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    MessageBox.Show(
-                        "This booking has already been paid.",
-                        "Payment",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-
+                    MessageBox.Show("This booking cannot be paid.", "Payment",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadBookings();
                     return;
                 }
 
-                // Open PaymentForm
-                using (PaymentForm paymentForm =
-                       new PaymentForm(
-                           bookingID,
-                           amount,
-                           carName,
-                           startDate,
-                           endDate))
-                {
-                    paymentForm.ShowDialog(this);
-                }
+                using PaymentForm paymentForm = new PaymentForm(
+                    selectedBookingID,
+                    Convert.ToDecimal(row["Total Amount"]),
+                    row["Car"].ToString(),
+                    Convert.ToDateTime(row["Start Date"]),
+                    Convert.ToDateTime(row["End Date"]));
 
-                // Refresh after PaymentForm closes
+                paymentForm.ShowDialog(this);
+                selectedBookingID = 0;
                 LoadBookings();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "Could not open the payment screen.\n\n" +
-                    ex.Message,
-                    "Payment Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                MessageBox.Show("Could not open the payment screen.\n\n" + ex.Message,
+                    "Payment Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        // ============================================================
-        // CANCEL BOOKING
-        // ============================================================
-
-        private void btnCancelBooking_Click(
-            object sender,
-            EventArgs e)
+        private void btnCancelBooking_Click(object sender, EventArgs e)
         {
-            if (dgvBookings.CurrentRow == null)
+            if (selectedBookingID == 0)
             {
-                MessageBox.Show(
-                    "Please select a booking first.",
-                    "Cancel Booking",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-
+                MessageBox.Show("Please click View Details on a booking first.",
+                    "Cancel Booking", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             try
             {
-                int bookingID =
-                    Convert.ToInt32(
-                        dgvBookings.CurrentRow
-                            .Cells["Booking ID"].Value);
+                DataRow row = FindBooking(selectedBookingID);
+                if (row == null) return;
 
-                string bookingStatus =
-                    dgvBookings.CurrentRow
-                        .Cells["Booking Status"]
-                        .Value?.ToString() ?? "";
-
-                string paymentStatus =
-                    dgvBookings.CurrentRow
-                        .Cells["Payment Status"]
-                        .Value?.ToString() ?? "";
-
-                if (!bookingStatus.Equals(
-                        "Pending",
-                        StringComparison.OrdinalIgnoreCase) ||
-                    !paymentStatus.Equals(
-                        "Not Paid",
-                        StringComparison.OrdinalIgnoreCase))
+                if (!row["Booking Status"].ToString().Equals("Pending", StringComparison.OrdinalIgnoreCase) ||
+                    !row["Payment Status"].ToString().Equals("Not Paid", StringComparison.OrdinalIgnoreCase))
                 {
                     MessageBox.Show(
                         "Only unpaid pending bookings can be cancelled. Paid bookings require a refund process and cannot be cancelled here.",
-                        "Cancel Booking",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
-
+                        "Cancel Booking", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                DialogResult result = MessageBox.Show(
-                    "Are you sure you want to cancel this booking?",
-                    "Confirm Cancellation",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
-
-                if (result != DialogResult.Yes)
+                if (MessageBox.Show("Are you sure you want to cancel this booking?",
+                    "Confirm Cancellation", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                     return;
 
-                DatabaseHelper databaseHelper =
-                    new DatabaseHelper();
+                using SqlConnection connection = new DatabaseHelper().GetConnection();
+                connection.Open();
 
-                using (SqlConnection connection =
-                       databaseHelper.GetConnection())
+                string query = @"
+                    UPDATE Bookings
+                    SET BookingStatus = 'Cancelled'
+                    WHERE BookingID = @BookingID
+                      AND CustomerID = @CustomerID
+                      AND BookingStatus = 'Pending'";
+
+                using SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@BookingID", selectedBookingID);
+                command.Parameters.AddWithValue("@CustomerID", customerID);
+
+                if (command.ExecuteNonQuery() > 0)
                 {
-                    connection.Open();
-
-                    string query = @"
-                        UPDATE Bookings
-                        SET BookingStatus = 'Cancelled'
-                        WHERE BookingID = @BookingID
-                          AND CustomerID = @CustomerID
-                          AND BookingStatus = 'Pending'";
-
-                    using (SqlCommand command =
-                           new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue(
-                            "@BookingID",
-                            bookingID);
-
-                        command.Parameters.AddWithValue(
-                            "@CustomerID",
-                            customerID);
-
-                        int rowsAffected =
-                            command.ExecuteNonQuery();
-
-                        if (rowsAffected > 0)
-                        {
-                            MessageBox.Show(
-                                "Booking cancelled successfully.",
-                                "Booking Cancelled",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Information);
-
-                            LoadBookings();
-                        }
-                        else
-                        {
-                            MessageBox.Show(
-                                "The booking could not be cancelled.",
-                                "Cancel Booking",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Warning);
-                        }
-                    }
+                    MessageBox.Show("Booking cancelled successfully.",
+                        "Booking Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    selectedBookingID = 0;
+                    LoadBookings();
+                }
+                else
+                {
+                    MessageBox.Show("The booking could not be cancelled.",
+                        "Cancel Booking", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             catch (SqlException ex)
             {
-                MessageBox.Show(
-                    "Could not cancel the booking.\n\n" +
-                    ex.Message,
-                    "Database Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                MessageBox.Show("Could not cancel the booking.\n\n" + ex.Message,
+                    "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "An unexpected error occurred.\n\n" +
-                    ex.Message,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                MessageBox.Show("An unexpected error occurred.\n\n" + ex.Message,
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-        // ============================================================
-        // BACK
-        // ============================================================
 
         private void btnBack_Click(
             object sender,

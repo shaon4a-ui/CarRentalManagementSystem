@@ -7,16 +7,12 @@ namespace CarRentalManagementSystem.Customer
     {
         private System.ComponentModel.IContainer components = null;
 
-        // Header
         private Panel headerPanel;
         private Button btnBack;
         private Label lblPageTitle;
         private Label lblSubtitle;
 
-        // Main container
         private Panel mainPanel;
-
-        // Car information
         private Panel carInfoPanel;
         private PictureBox picCar;
         private Label lblCarName;
@@ -25,44 +21,44 @@ namespace CarRentalManagementSystem.Customer
         private Label lblCarLocation;
         private Label lblPricePerDay;
 
-        // Booking section
         private Panel bookingPanel;
         private Label lblBookingTitle;
-
         private Label lblStartDate;
         private DateTimePicker dtpStartDate;
-
         private Label lblReturnDate;
         private DateTimePicker dtpReturnDate;
-
+        private Label lblAvailability;
         private Label lblDaysTitle;
         private Label lblDays;
-
         private Label lblTotalTitle;
         private Label lblTotal;
 
-        // Buttons
+        private Panel summaryPanel;
+        private Label lblSummaryTitle;
+        private Label lblSummaryCar;
+        private Label lblSummaryDates;
+        private Label lblSummaryDuration;
+        private Label lblSummaryAmount;
+
         private Button btnConfirmBooking;
         private Button btnCancel;
 
-
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-            {
+            if (disposing && components != null)
                 components.Dispose();
-            }
-
             base.Dispose(disposing);
         }
 
-
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
+
             headerPanel = new Panel();
             btnBack = new Button();
             lblPageTitle = new Label();
             lblSubtitle = new Label();
+
             mainPanel = new Panel();
             carInfoPanel = new Panel();
             picCar = new PictureBox();
@@ -71,349 +67,298 @@ namespace CarRentalManagementSystem.Customer
             lblCarSeats = new Label();
             lblCarLocation = new Label();
             lblPricePerDay = new Label();
+
             bookingPanel = new Panel();
-            lblAvailability = new Label();
             lblBookingTitle = new Label();
             lblStartDate = new Label();
             dtpStartDate = new DateTimePicker();
             lblReturnDate = new Label();
             dtpReturnDate = new DateTimePicker();
+            lblAvailability = new Label();
             lblDaysTitle = new Label();
             lblDays = new Label();
             lblTotalTitle = new Label();
             lblTotal = new Label();
+
+            summaryPanel = new Panel();
+            lblSummaryTitle = new Label();
+            lblSummaryCar = new Label();
+            lblSummaryDates = new Label();
+            lblSummaryDuration = new Label();
+            lblSummaryAmount = new Label();
+
             btnConfirmBooking = new Button();
             btnCancel = new Button();
+
             headerPanel.SuspendLayout();
             mainPanel.SuspendLayout();
             carInfoPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCar).BeginInit();
             bookingPanel.SuspendLayout();
+            summaryPanel.SuspendLayout();
             SuspendLayout();
-            // 
-            // headerPanel
-            // 
-            headerPanel.BackColor = Color.FromArgb(24, 33, 48);
+
+            // BookingForm
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(244, 248, 252);
+            ClientSize = new Size(1180, 820);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "BookingForm";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Book a Car";
+
+            // Header
+            headerPanel.BackColor = Color.FromArgb(15, 39, 72);
             headerPanel.Controls.Add(btnBack);
             headerPanel.Controls.Add(lblPageTitle);
             headerPanel.Controls.Add(lblSubtitle);
             headerPanel.Dock = DockStyle.Top;
-            headerPanel.Location = new Point(0, 0);
-            headerPanel.Margin = new Padding(3, 4, 3, 4);
-            headerPanel.Name = "headerPanel";
-            headerPanel.Size = new Size(1143, 99);
-            headerPanel.TabIndex = 1;
-            // 
-            // btnBack
-            // 
+            headerPanel.Size = new Size(1180, 86);
+
             btnBack.BackColor = Color.Transparent;
             btnBack.Cursor = Cursors.Hand;
-            btnBack.FlatAppearance.BorderColor = Color.FromArgb(220, 224, 230);
+            btnBack.FlatAppearance.BorderSize = 0;
             btnBack.FlatStyle = FlatStyle.Flat;
             btnBack.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             btnBack.ForeColor = Color.White;
-            btnBack.Location = new Point(0, 0);
-            btnBack.Margin = new Padding(3, 4, 3, 4);
-            btnBack.Name = "btnBack";
-            btnBack.Size = new Size(109, 51);
-            btnBack.TabIndex = 0;
+            btnBack.Location = new Point(25, 22);
+            btnBack.Size = new Size(100, 42);
             btnBack.Text = "←  Back";
             btnBack.UseVisualStyleBackColor = false;
-            // 
-            // lblPageTitle
-            // 
+
             lblPageTitle.AutoSize = true;
             lblPageTitle.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
             lblPageTitle.ForeColor = Color.White;
-            lblPageTitle.Location = new Point(444, 9);
-            lblPageTitle.Name = "lblPageTitle";
-            lblPageTitle.Size = new Size(192, 46);
-            lblPageTitle.TabIndex = 1;
+            lblPageTitle.Location = new Point(490, 12);
             lblPageTitle.Text = "Book a Car";
-            // 
-            // lblSubtitle
-            // 
+
             lblSubtitle.AutoSize = true;
             lblSubtitle.Font = new Font("Segoe UI", 9.5F);
-            lblSubtitle.ForeColor = Color.White;
-            lblSubtitle.Location = new Point(364, 55);
-            lblSubtitle.Name = "lblSubtitle";
-            lblSubtitle.Size = new Size(368, 21);
-            lblSubtitle.TabIndex = 2;
+            lblSubtitle.ForeColor = Color.FromArgb(210, 222, 237);
+            lblSubtitle.Location = new Point(418, 54);
             lblSubtitle.Text = "Choose your rental dates and confirm your booking";
-            // 
-            // mainPanel
-            // 
-            mainPanel.BackColor = Color.FromArgb(245, 247, 250);
+
+            // Main
+            mainPanel.BackColor = Color.FromArgb(244, 248, 252);
             mainPanel.Controls.Add(carInfoPanel);
             mainPanel.Controls.Add(bookingPanel);
-            mainPanel.Location = new Point(29, 140);
-            mainPanel.Margin = new Padding(3, 4, 3, 4);
-            mainPanel.Name = "mainPanel";
-            mainPanel.Size = new Size(1086, 727);
-            mainPanel.TabIndex = 0;
-            // 
-            // carInfoPanel
-            // 
+            mainPanel.Dock = DockStyle.Fill;
+            mainPanel.Padding = new Padding(35, 30, 35, 30);
+
+            // Car card
             carInfoPanel.BackColor = Color.White;
-            carInfoPanel.BorderStyle = BorderStyle.FixedSingle;
             carInfoPanel.Controls.Add(picCar);
             carInfoPanel.Controls.Add(lblCarName);
             carInfoPanel.Controls.Add(lblCarType);
             carInfoPanel.Controls.Add(lblCarSeats);
             carInfoPanel.Controls.Add(lblCarLocation);
             carInfoPanel.Controls.Add(lblPricePerDay);
-            carInfoPanel.Location = new Point(0, 0);
-            carInfoPanel.Margin = new Padding(3, 4, 3, 4);
-            carInfoPanel.Name = "carInfoPanel";
-            carInfoPanel.Size = new Size(520, 493);
-            carInfoPanel.TabIndex = 0;
-            // 
-            // picCar
-            // 
-            picCar.BackColor = Color.FromArgb(245, 247, 250);
-            picCar.Location = new Point(23, 27);
-            picCar.Margin = new Padding(3, 4, 3, 4);
+            carInfoPanel.Location = new Point(35, 30);
+            carInfoPanel.Size = new Size(530, 674);
+
+            picCar.BackColor = Color.FromArgb(239, 244, 250);
+            picCar.Location = new Point(22, 22);
             picCar.Name = "picCar";
-            picCar.Size = new Size(474, 253);
+            picCar.Size = new Size(486, 330);
             picCar.SizeMode = PictureBoxSizeMode.Zoom;
-            picCar.TabIndex = 0;
             picCar.TabStop = false;
-            // 
-            // lblCarName
-            // 
-            lblCarName.Font = new Font("Segoe UI", 17F, FontStyle.Bold);
-            lblCarName.ForeColor = Color.FromArgb(31, 41, 55);
-            lblCarName.Location = new Point(23, 300);
-            lblCarName.Name = "lblCarName";
-            lblCarName.Size = new Size(474, 47);
-            lblCarName.TabIndex = 1;
+
+            lblCarName.AutoSize = false;
+            lblCarName.Font = new Font("Segoe UI", 21F, FontStyle.Bold);
+            lblCarName.ForeColor = Color.FromArgb(15, 39, 72);
+            lblCarName.Location = new Point(22, 370);
+            lblCarName.Size = new Size(486, 45);
             lblCarName.Text = "Toyota Corolla";
-            // 
-            // lblCarType
-            // 
+
+            lblCarType.AutoSize = true;
             lblCarType.Font = new Font("Segoe UI", 10F);
-            lblCarType.ForeColor = Color.FromArgb(107, 114, 128);
-            lblCarType.Location = new Point(23, 353);
-            lblCarType.Name = "lblCarType";
-            lblCarType.Size = new Size(229, 33);
-            lblCarType.TabIndex = 2;
+            lblCarType.ForeColor = Color.FromArgb(82, 95, 111);
+            lblCarType.Location = new Point(22, 425);
             lblCarType.Text = "Type: Sedan";
-            // 
-            // lblCarSeats
-            // 
+
+            lblCarSeats.AutoSize = true;
             lblCarSeats.Font = new Font("Segoe UI", 10F);
-            lblCarSeats.ForeColor = Color.FromArgb(107, 114, 128);
-            lblCarSeats.Location = new Point(257, 353);
-            lblCarSeats.Name = "lblCarSeats";
-            lblCarSeats.Size = new Size(229, 33);
-            lblCarSeats.TabIndex = 3;
+            lblCarSeats.ForeColor = Color.FromArgb(82, 95, 111);
+            lblCarSeats.Location = new Point(275, 425);
             lblCarSeats.Text = "Seats: 5";
-            // 
-            // lblCarLocation
-            // 
+
+            lblCarLocation.AutoSize = true;
             lblCarLocation.Font = new Font("Segoe UI", 10F);
-            lblCarLocation.ForeColor = Color.FromArgb(107, 114, 128);
-            lblCarLocation.Location = new Point(23, 393);
-            lblCarLocation.Name = "lblCarLocation";
-            lblCarLocation.Size = new Size(286, 33);
-            lblCarLocation.TabIndex = 4;
+            lblCarLocation.ForeColor = Color.FromArgb(82, 95, 111);
+            lblCarLocation.Location = new Point(22, 460);
             lblCarLocation.Text = "Location: Dhaka";
-            // 
-            // lblPricePerDay
-            // 
-            lblPricePerDay.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            lblPricePerDay.ForeColor = Color.FromArgb(37, 99, 235);
-            lblPricePerDay.Location = new Point(23, 433);
-            lblPricePerDay.Name = "lblPricePerDay";
-            lblPricePerDay.Size = new Size(343, 40);
-            lblPricePerDay.TabIndex = 5;
+
+            lblPricePerDay.AutoSize = true;
+            lblPricePerDay.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            lblPricePerDay.ForeColor = Color.FromArgb(30, 136, 255);
+            lblPricePerDay.Location = new Point(22, 505);
             lblPricePerDay.Text = "৳2,500 / day";
-            // 
-            // bookingPanel
-            // 
+
+            // Booking card
             bookingPanel.BackColor = Color.White;
-            bookingPanel.BorderStyle = BorderStyle.FixedSingle;
-            bookingPanel.Controls.Add(lblAvailability);
             bookingPanel.Controls.Add(lblBookingTitle);
             bookingPanel.Controls.Add(lblStartDate);
             bookingPanel.Controls.Add(dtpStartDate);
             bookingPanel.Controls.Add(lblReturnDate);
             bookingPanel.Controls.Add(dtpReturnDate);
+            bookingPanel.Controls.Add(lblAvailability);
             bookingPanel.Controls.Add(lblDaysTitle);
             bookingPanel.Controls.Add(lblDays);
             bookingPanel.Controls.Add(lblTotalTitle);
             bookingPanel.Controls.Add(lblTotal);
+            bookingPanel.Controls.Add(summaryPanel);
             bookingPanel.Controls.Add(btnConfirmBooking);
             bookingPanel.Controls.Add(btnCancel);
-            bookingPanel.Location = new Point(549, 0);
-            bookingPanel.Margin = new Padding(3, 4, 3, 4);
-            bookingPanel.Name = "bookingPanel";
-            bookingPanel.Size = new Size(537, 726);
-            bookingPanel.TabIndex = 1;
-            // 
-            // lblAvailability
-            // 
-            lblAvailability.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblAvailability.Location = new Point(34, 317);
-            lblAvailability.Name = "lblAvailability";
-            lblAvailability.Size = new Size(400, 30);
-            lblAvailability.TabIndex = 11;
-            lblAvailability.Text = "Checking availability...";
-            // 
-            // lblBookingTitle
-            // 
+            bookingPanel.Location = new Point(595, 30);
+            bookingPanel.Size = new Size(550, 674);
+
             lblBookingTitle.AutoSize = true;
             lblBookingTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
-            lblBookingTitle.ForeColor = Color.FromArgb(31, 41, 55);
-            lblBookingTitle.Location = new Point(34, 33);
-            lblBookingTitle.Name = "lblBookingTitle";
-            lblBookingTitle.Size = new Size(195, 37);
-            lblBookingTitle.TabIndex = 0;
+            lblBookingTitle.ForeColor = Color.FromArgb(15, 39, 72);
+            lblBookingTitle.Location = new Point(28, 24);
             lblBookingTitle.Text = "Rental Details";
-            // 
-            // lblStartDate
-            // 
+
             lblStartDate.AutoSize = true;
             lblStartDate.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             lblStartDate.ForeColor = Color.FromArgb(55, 65, 81);
-            lblStartDate.Location = new Point(34, 109);
-            lblStartDate.Name = "lblStartDate";
-            lblStartDate.Size = new Size(149, 23);
-            lblStartDate.TabIndex = 1;
+            lblStartDate.Location = new Point(28, 78);
             lblStartDate.Text = "Rental Start Date";
-            // 
-            // dtpStartDate
-            // 
+
             dtpStartDate.Font = new Font("Segoe UI", 10F);
             dtpStartDate.Format = DateTimePickerFormat.Short;
-            dtpStartDate.Location = new Point(34, 144);
-            dtpStartDate.Margin = new Padding(3, 4, 3, 4);
-            dtpStartDate.MinDate = new DateTime(2026, 9, 4, 0, 0, 0, 0);
+            dtpStartDate.Location = new Point(28, 108);
             dtpStartDate.Name = "dtpStartDate";
-            dtpStartDate.Size = new Size(457, 30);
-            dtpStartDate.TabIndex = 2;
-            // 
-            // lblReturnDate
-            // 
+            dtpStartDate.Size = new Size(494, 30);
+            dtpStartDate.Value = DateTime.Today;
+            dtpStartDate.MinDate = DateTime.Today;
+
             lblReturnDate.AutoSize = true;
             lblReturnDate.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             lblReturnDate.ForeColor = Color.FromArgb(55, 65, 81);
-            lblReturnDate.Location = new Point(34, 213);
-            lblReturnDate.Name = "lblReturnDate";
-            lblReturnDate.Size = new Size(163, 23);
-            lblReturnDate.TabIndex = 3;
+            lblReturnDate.Location = new Point(28, 157);
             lblReturnDate.Text = "Rental Return Date";
-            // 
-            // dtpReturnDate
-            // 
+
             dtpReturnDate.Font = new Font("Segoe UI", 10F);
             dtpReturnDate.Format = DateTimePickerFormat.Short;
-            dtpReturnDate.Location = new Point(34, 248);
-            dtpReturnDate.Margin = new Padding(3, 4, 3, 4);
-            dtpReturnDate.MinDate = new DateTime(2026, 9, 4, 0, 0, 0, 0);
+            dtpReturnDate.Location = new Point(28, 187);
             dtpReturnDate.Name = "dtpReturnDate";
-            dtpReturnDate.Size = new Size(457, 30);
-            dtpReturnDate.TabIndex = 4;
-            // 
-            // lblDaysTitle
-            // 
+            dtpReturnDate.Size = new Size(494, 30);
+            dtpReturnDate.Value = DateTime.Today.AddDays(1);
+            dtpReturnDate.MinDate = DateTime.Today;
+
+            lblAvailability.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            lblAvailability.ForeColor = Color.FromArgb(22, 163, 74);
+            lblAvailability.Location = new Point(28, 230);
+            lblAvailability.Size = new Size(494, 28);
+            lblAvailability.Text = "Checking availability...";
+
             lblDaysTitle.AutoSize = true;
-            lblDaysTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            lblDaysTitle.ForeColor = Color.FromArgb(55, 65, 81);
-            lblDaysTitle.Location = new Point(34, 374);
-            lblDaysTitle.Name = "lblDaysTitle";
-            lblDaysTitle.Size = new Size(137, 23);
-            lblDaysTitle.TabIndex = 5;
+            lblDaysTitle.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            lblDaysTitle.ForeColor = Color.FromArgb(82, 95, 111);
+            lblDaysTitle.Location = new Point(28, 270);
             lblDaysTitle.Text = "Rental Duration";
-            // 
-            // lblDays
-            // 
-            lblDays.Font = new Font("Segoe UI", 11F);
-            lblDays.ForeColor = Color.FromArgb(75, 85, 99);
-            lblDays.Location = new Point(34, 407);
-            lblDays.Name = "lblDays";
-            lblDays.Size = new Size(457, 40);
-            lblDays.TabIndex = 6;
+
+            lblDays.AutoSize = true;
+            lblDays.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            lblDays.ForeColor = Color.FromArgb(15, 39, 72);
+            lblDays.Location = new Point(180, 267);
             lblDays.Text = "1 day";
-            // 
-            // lblTotalTitle
-            // 
+
             lblTotalTitle.AutoSize = true;
-            lblTotalTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            lblTotalTitle.ForeColor = Color.FromArgb(55, 65, 81);
-            lblTotalTitle.Location = new Point(34, 460);
-            lblTotalTitle.Name = "lblTotalTitle";
-            lblTotalTitle.Size = new Size(119, 23);
-            lblTotalTitle.TabIndex = 7;
+            lblTotalTitle.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            lblTotalTitle.ForeColor = Color.FromArgb(82, 95, 111);
+            lblTotalTitle.Location = new Point(28, 307);
             lblTotalTitle.Text = "Total Amount";
-            // 
-            // lblTotal
-            // 
-            lblTotal.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
-            lblTotal.ForeColor = Color.FromArgb(37, 99, 235);
-            lblTotal.Location = new Point(34, 499);
-            lblTotal.Name = "lblTotal";
-            lblTotal.Size = new Size(457, 60);
-            lblTotal.TabIndex = 8;
+
+            lblTotal.AutoSize = true;
+            lblTotal.Font = new Font("Segoe UI", 19F, FontStyle.Bold);
+            lblTotal.ForeColor = Color.FromArgb(30, 136, 255);
+            lblTotal.Location = new Point(180, 300);
             lblTotal.Text = "৳2,500";
-            // 
-            // btnConfirmBooking
-            // 
-            btnConfirmBooking.BackColor = Color.FromArgb(37, 99, 235);
+
+            // Summary
+            summaryPanel.BackColor = Color.FromArgb(244, 248, 252);
+            summaryPanel.Controls.Add(lblSummaryTitle);
+            summaryPanel.Controls.Add(lblSummaryCar);
+            summaryPanel.Controls.Add(lblSummaryDates);
+            summaryPanel.Controls.Add(lblSummaryDuration);
+            summaryPanel.Controls.Add(lblSummaryAmount);
+            summaryPanel.Location = new Point(28, 350);
+            summaryPanel.Size = new Size(494, 100);
+
+            lblSummaryTitle.AutoSize = true;
+            lblSummaryTitle.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            lblSummaryTitle.ForeColor = Color.FromArgb(107, 114, 128);
+            lblSummaryTitle.Location = new Point(14, 9);
+            lblSummaryTitle.Text = "BOOKING SUMMARY";
+
+            lblSummaryCar.AutoSize = true;
+            lblSummaryCar.Font = new Font("Segoe UI", 9F);
+            lblSummaryCar.ForeColor = Color.FromArgb(55, 65, 81);
+            lblSummaryCar.Location = new Point(14, 31);
+            lblSummaryCar.Text = "Car: -";
+
+            lblSummaryDates.AutoSize = true;
+            lblSummaryDates.Font = new Font("Segoe UI", 9F);
+            lblSummaryDates.ForeColor = Color.FromArgb(55, 65, 81);
+            lblSummaryDates.Location = new Point(14, 56);
+            lblSummaryDates.Text = "Dates: -";
+
+            lblSummaryDuration.AutoSize = true;
+            lblSummaryDuration.Font = new Font("Segoe UI", 9F);
+            lblSummaryDuration.ForeColor = Color.FromArgb(55, 65, 81);
+            lblSummaryDuration.Location = new Point(270, 31);
+            lblSummaryDuration.Text = "Duration: -";
+
+            lblSummaryAmount.AutoSize = true;
+            lblSummaryAmount.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            lblSummaryAmount.ForeColor = Color.FromArgb(30, 136, 255);
+            lblSummaryAmount.Location = new Point(270, 56);
+            lblSummaryAmount.Text = "Amount: ৳0";
+
+            btnConfirmBooking.BackColor = Color.FromArgb(30, 136, 255);
             btnConfirmBooking.Cursor = Cursors.Hand;
             btnConfirmBooking.FlatAppearance.BorderSize = 0;
             btnConfirmBooking.FlatStyle = FlatStyle.Flat;
-            btnConfirmBooking.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            btnConfirmBooking.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
             btnConfirmBooking.ForeColor = Color.White;
-            btnConfirmBooking.Location = new Point(34, 590);
-            btnConfirmBooking.Margin = new Padding(3, 4, 3, 4);
+            btnConfirmBooking.Location = new Point(28, 490);
             btnConfirmBooking.Name = "btnConfirmBooking";
-            btnConfirmBooking.Size = new Size(217, 60);
-            btnConfirmBooking.TabIndex = 9;
-            btnConfirmBooking.Text = "Confirm Booking";
+            btnConfirmBooking.Size = new Size(310, 54);
+            btnConfirmBooking.Text = "Continue to Payment";
             btnConfirmBooking.UseVisualStyleBackColor = false;
-            // 
-            // btnCancel
-            // 
+            btnConfirmBooking.Click += btnConfirmBooking_Click;
+
             btnCancel.BackColor = Color.White;
             btnCancel.Cursor = Cursors.Hand;
-            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(210, 218, 228);
             btnCancel.FlatStyle = FlatStyle.Flat;
             btnCancel.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             btnCancel.ForeColor = Color.FromArgb(55, 65, 81);
-            btnCancel.Location = new Point(274, 590);
-            btnCancel.Margin = new Padding(3, 4, 3, 4);
+            btnCancel.Location = new Point(352, 490);
             btnCancel.Name = "btnCancel";
-            btnCancel.Size = new Size(217, 60);
-            btnCancel.TabIndex = 10;
+            btnCancel.Size = new Size(170, 54);
             btnCancel.Text = "Cancel";
             btnCancel.UseVisualStyleBackColor = false;
-            // 
-            // BookingForm
-            // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
-            AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.FromArgb(245, 247, 250);
-            ClientSize = new Size(1143, 933);
+            btnCancel.Click += btnCancel_Click;
+
             Controls.Add(mainPanel);
             Controls.Add(headerPanel);
-            FormBorderStyle = FormBorderStyle.FixedSingle;
-            Margin = new Padding(3, 4, 3, 4);
-            MaximizeBox = false;
-            Name = "BookingForm";
-            StartPosition = FormStartPosition.CenterScreen;
-            Text = "Book a Car";
+
             headerPanel.ResumeLayout(false);
             headerPanel.PerformLayout();
             mainPanel.ResumeLayout(false);
             carInfoPanel.ResumeLayout(false);
+            carInfoPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)picCar).EndInit();
             bookingPanel.ResumeLayout(false);
             bookingPanel.PerformLayout();
+            summaryPanel.ResumeLayout(false);
+            summaryPanel.PerformLayout();
             ResumeLayout(false);
         }
-
-        private Label lblAvailability;
     }
 }
